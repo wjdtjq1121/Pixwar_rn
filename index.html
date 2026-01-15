@@ -1,0 +1,3007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Pixwar - Multiplayer Blokus</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        /* Lobby Screen Styles */
+        .lobby-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .lobby-screen h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .lobby-screen p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+
+        .lobby-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .room-info {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f0f0f0;
+            border-radius: 10px;
+        }
+
+        .room-code {
+            font-size: 3em;
+            font-weight: bold;
+            color: #2196F3;
+            letter-spacing: 10px;
+            margin: 10px 0;
+        }
+
+        .join-input {
+            padding: 15px;
+            font-size: 1.5em;
+            text-align: center;
+            letter-spacing: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 300px;
+            max-width: 100%;
+        }
+
+        .waiting-message {
+            color: #666;
+            font-size: 1.2em;
+            margin-top: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .game-header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .version-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #4CAF50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .room-code-display {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .room-code-display strong {
+            color: #2196F3;
+            font-size: 1.5em;
+            letter-spacing: 5px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .player-info {
+            padding: 15px 25px;
+            border-radius: 10px;
+            min-width: 200px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .player-info.active {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .player-info.blue { background: #2196F3; color: white; }
+        .player-info.red { background: #F44336; color: white; }
+        .player-info.yellow { background: #FFC107; color: #333; }
+        .player-info.green { background: #4CAF50; color: white; }
+
+        .player-info .name {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .player-info .pieces-left {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .game-main {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .board-container {
+            flex-shrink: 0;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(14, 30px);
+            grid-template-rows: repeat(14, 30px);
+            gap: 1px;
+            background: #333;
+            border: 3px solid #333;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .cell {
+            background: white;
+            width: 30px;
+            height: 30px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .cell:hover {
+            outline: 2px solid #ff0;
+        }
+
+        .cell.corner {
+            background: #f0f0f0;
+        }
+
+        .cell.start-corner {
+            position: relative;
+            animation: pulse-corner 1.5s ease-in-out infinite;
+        }
+
+        .cell.start-corner::after {
+            content: '★';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+
+        @keyframes pulse-corner {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+
+        .cell.filled {
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .cell.filled.blue { background: #2196F3; }
+        .cell.filled.red { background: #F44336; }
+        .cell.filled.yellow { background: #FFC107; }
+        .cell.filled.green { background: #4CAF50; }
+
+        .cell.preview {
+            opacity: 0.6;
+            border: 3px solid rgba(0, 255, 0, 0.9) !important;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+            animation: preview-pulse 1s ease-in-out infinite;
+        }
+
+        .cell.invalid-preview {
+            background: rgba(255, 0, 0, 0.5) !important;
+            border: 3px solid rgba(255, 0, 0, 0.9) !important;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+            animation: invalid-pulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes preview-pulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 0, 0.5); }
+            50% { box-shadow: 0 0 15px rgba(0, 255, 0, 0.9); }
+        }
+
+        @keyframes invalid-pulse {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+            50% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.9); }
+        }
+
+        .pieces-container {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .pieces-container h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .pieces-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .piece {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .piece:hover:not(.used) {
+            transform: scale(1.05);
+            border-color: #666;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .piece.selected {
+            border-color: #333;
+            border-width: 3px;
+            background: #f0f0f0;
+        }
+
+        .piece.used {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .piece-shape {
+            display: grid;
+            gap: 1px;
+        }
+
+        .piece-cell {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .piece-cell.filled.blue { background: #2196F3; }
+        .piece-cell.filled.red { background: #F44336; }
+        .piece-cell.filled.yellow { background: #FFC107; }
+        .piece-cell.filled.green { background: #4CAF50; }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #666;
+            color: white;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #F44336;
+            color: white;
+        }
+
+        .message {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f0f0f0;
+            color: #333;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .message.opponent-turn {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .message.your-turn {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .game-over-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .game-over-modal.show {
+            display: flex;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+        }
+
+        .game-over-content h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .final-scores {
+            margin: 20px 0;
+        }
+
+        .score-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .room-item {
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+        }
+
+        .room-item:hover {
+            border-color: #2196F3;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .room-info-left {
+            flex: 1;
+        }
+
+        .room-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .room-details {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .room-status {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .room-status.waiting {
+            background: #FFC107;
+            color: #333;
+        }
+
+        .room-status.full {
+            background: #F44336;
+            color: white;
+        }
+
+        .no-rooms {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-size: 1.1em;
+        }
+
+        .player-slot {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .player-slot.connected {
+            border-color: #4CAF50;
+            background: #f1f8f4;
+        }
+
+        .player-slot.waiting {
+            border-color: #ddd;
+            background: #f9f9f9;
+            opacity: 0.6;
+        }
+
+        .player-color-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(0,0,0,0.2);
+        }
+
+        .player-color-dot.blue { background: #2196F3; }
+        .player-color-dot.red { background: #F44336; }
+        .player-color-dot.yellow { background: #FFC107; }
+        .player-color-dot.green { background: #4CAF50; }
+
+        .player-name {
+            flex: 1;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .player-status {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .player-status.ready {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .player-status.not-ready {
+            color: #F44336;
+        }
+
+        /* Mobile Optimization */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .game-container {
+                padding: 15px;
+            }
+
+            .version-badge {
+                font-size: 0.65em;
+                padding: 3px 8px;
+            }
+
+            .game-header h1 {
+                font-size: 1.8em;
+            }
+
+            .lobby-screen h1 {
+                font-size: 2em;
+            }
+
+            .room-code {
+                font-size: 2em;
+                letter-spacing: 5px;
+            }
+
+            .join-input {
+                font-size: 1.2em;
+                letter-spacing: 5px;
+                width: 250px;
+            }
+
+            .game-main {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .board {
+                grid-template-columns: repeat(14, 22px);
+                grid-template-rows: repeat(14, 22px);
+            }
+
+            .cell {
+                width: 22px;
+                height: 22px;
+            }
+
+            .cell.start-corner::after {
+                font-size: 16px;
+            }
+
+            .pieces-container {
+                max-width: 100%;
+                width: 100%;
+            }
+
+            .pieces-grid {
+                grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+                gap: 8px;
+                max-height: 400px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 0.95em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Lobby Screen -->
+    <div id="lobbyScreen" class="game-container lobby-screen">
+        <div style="position: relative;">
+            <span class="version-badge" style="position: absolute; top: 0; right: 0;">v3.0.5</span>
+            <h1>Pixwar</h1>
+        </div>
+
+        <!-- Main Menu -->
+        <div id="mainMenu">
+            <div class="lobby-buttons">
+                <button class="btn btn-primary" onclick="showLoginScreen()" style="font-size: 1.3em; padding: 20px 40px;">게임 시작</button>
+                <button class="btn btn-success" onclick="showHowToPlay()" style="font-size: 1.3em; padding: 20px 40px;">게임 방법</button>
+            </div>
+        </div>
+
+        <!-- Login Screen -->
+        <div id="loginScreen" class="hidden">
+            <h2 style="margin: 20px 0; color: #333;">로그인</h2>
+            <input type="text" id="loginUserId" class="join-input" maxlength="20" placeholder="아이디" style="width: 250px; letter-spacing: normal; margin: 10px 0;">
+            <br>
+            <input type="password" id="loginPassword" class="join-input" maxlength="20" placeholder="비밀번호" style="width: 250px; letter-spacing: normal; margin: 10px 0;">
+            <br><br>
+            <div class="lobby-buttons">
+                <button class="btn btn-primary" onclick="login()">로그인</button>
+                <button class="btn btn-secondary" onclick="backToMainMenu()">뒤로</button>
+            </div>
+            <br>
+            <button class="btn btn-success" onclick="showSignupScreen()" style="margin-top: 10px;">가입하기</button>
+        </div>
+
+        <!-- Signup Screen -->
+        <div id="signupScreen" class="hidden">
+            <h2 style="margin: 20px 0; color: #333;">회원가입</h2>
+            <input type="text" id="signupUserId" class="join-input" maxlength="20" placeholder="아이디" style="width: 250px; letter-spacing: normal; margin: 10px 0;">
+            <br>
+            <input type="password" id="signupPassword" class="join-input" maxlength="20" placeholder="비밀번호" style="width: 250px; letter-spacing: normal; margin: 10px 0;">
+            <br>
+            <input type="text" id="signupNickname" class="join-input" maxlength="20" placeholder="닉네임" style="width: 250px; letter-spacing: normal; margin: 10px 0;">
+            <br><br>
+            <div class="lobby-buttons">
+                <button class="btn btn-primary" onclick="signup()">가입하기</button>
+                <button class="btn btn-secondary" onclick="showLoginScreen()">뒤로</button>
+            </div>
+        </div>
+
+        <!-- How to Play -->
+        <div id="howToPlay" class="hidden">
+            <h2 style="color: #333;">게임 방법</h2>
+            <div style="text-align: left; padding: 20px; max-width: 600px; margin: 0 auto;">
+                <h3>🎯 목표</h3>
+                <p>블로커스 게임은 자신의 조각을 최대한 많이 배치하는 전략 게임입니다.</p>
+
+                <h3>📋 규칙</h3>
+                <ul style="line-height: 2;">
+                    <li>첫 번째 조각은 자신의 시작 코너(★)를 덮어야 합니다</li>
+                    <li>이후 조각들은 같은 색 조각의 꼭지점에만 닿아야 합니다</li>
+                    <li>같은 색 조각의 변끼리는 닿으면 안됩니다</li>
+                    <li>다른 색 조각과는 자유롭게 배치 가능합니다</li>
+                </ul>
+
+                <h3>🏆 점수</h3>
+                <ul style="line-height: 2;">
+                    <li>남은 조각의 사각형 개수만큼 -점수</li>
+                    <li>모든 조각 사용 시 +15점 보너스</li>
+                    <li>1칸 조각을 마지막에 놓으면 +5점 추가</li>
+                </ul>
+            </div>
+            <br>
+            <button class="btn btn-secondary" onclick="backToMainMenu()">뒤로</button>
+        </div>
+
+        <!-- Lobby Main -->
+        <div id="lobbyMain" class="hidden">
+            <h2 style="margin: 20px 0; color: #333;">게임 로비</h2>
+            <p style="color: #666; margin-bottom: 20px;">
+                환영합니다, <strong id="displayNickname"></strong>님!
+                <button class="btn btn-secondary" onclick="logout()" style="padding: 5px 15px; font-size: 0.9em; margin-left: 10px;">로그아웃</button>
+            </p>
+            <div class="lobby-buttons">
+                <button class="btn btn-primary" onclick="showCreateRoomSettings()" style="font-size: 1.3em; padding: 20px 40px;">방 만들기</button>
+                <button class="btn btn-success" onclick="showRoomList()" style="font-size: 1.3em; padding: 20px 40px;">방 목록</button>
+            </div>
+            <br>
+            <button class="btn btn-secondary" onclick="backToMainMenu()">뒤로</button>
+        </div>
+
+        <!-- Create Room Settings -->
+        <div id="createRoomSettings" class="hidden">
+            <h2 style="margin: 20px 0; color: #333;">방 설정</h2>
+            <div style="padding: 20px; text-align: left; max-width: 400px; margin: 0 auto;">
+                <label for="turnTimeLimit" style="display: block; margin-bottom: 10px; color: #333; font-weight: bold;">
+                    턴 제한 시간: <span id="timeLimitDisplay">120</span>초
+                </label>
+                <input type="range" id="turnTimeLimit" min="5" max="300" value="120"
+                       oninput="document.getElementById('timeLimitDisplay').textContent = this.value"
+                       style="width: 100%; margin-bottom: 20px;">
+                <p style="color: #666; font-size: 0.9em;">각 플레이어의 턴 제한 시간입니다. (5~300초)</p>
+                <p style="color: #666; font-size: 0.9em;">⚠️ 시간 초과 3회 시 자동으로 AI로 대체됩니다.</p>
+            </div>
+            <br>
+            <div class="lobby-buttons">
+                <button class="btn btn-primary" onclick="createRoomWithSettings()" style="font-size: 1.3em; padding: 20px 40px;">방 만들기</button>
+                <button class="btn btn-secondary" onclick="backToLobby()">뒤로</button>
+            </div>
+        </div>
+
+        <!-- Room List -->
+        <div id="roomListView" class="hidden">
+            <h2 style="margin: 20px 0; color: #333;">방 목록</h2>
+            <div id="roomListContainer" style="max-height: 400px; overflow-y: auto; margin: 20px 0;">
+                <!-- Room list will be inserted here -->
+            </div>
+            <button class="btn btn-secondary" onclick="backToLobby()">뒤로</button>
+        </div>
+
+        <div id="createRoomView" class="hidden">
+            <div class="room-info">
+                <h2>대기실</h2>
+                <p>방 코드: <span class="room-code" id="displayRoomCode" style="font-size: 1.5em;"></span></p>
+                <div id="waitingPlayers" style="margin-top: 20px;">
+                    <h3 style="color: #333;">플레이어 목록</h3>
+                    <div id="playersList" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                        <!-- Players will be listed here -->
+                    </div>
+                </div>
+                <p class="waiting-message" id="waitingMessage">플레이어를 기다리는 중...</p>
+
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-success" id="readyBtn" onclick="toggleReady()" style="display: none; font-size: 1.2em; padding: 15px 30px;">준비</button>
+                    <button class="btn btn-primary" id="startBtn" onclick="startGameByHost()" style="display: none; font-size: 1.2em; padding: 15px 30px;">게임 시작</button>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="cancelRoom()">방 나가기</button>
+        </div>
+
+        <div id="joinRoomView" class="hidden">
+            <div class="room-info">
+                <h2>Join Room</h2>
+                <p>Enter the 6-digit room code:</p>
+                <input type="text" id="roomCodeInput" class="join-input" maxlength="6" placeholder="000000">
+                <br><br>
+                <button class="btn btn-primary" onclick="joinRoom()">Join</button>
+                <button class="btn btn-secondary" onclick="cancelJoin()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen" class="game-container hidden">
+        <div class="game-header">
+            <span class="version-badge">v3.0.5</span>
+            <h1>Pixwar</h1>
+            <div class="room-code-display">
+                Room Code: <strong id="gameRoomCode"></strong>
+            </div>
+        </div>
+
+        <div class="game-info" id="playersInfo">
+            <!-- Players info will be inserted here -->
+        </div>
+
+        <div class="message" id="messageBox">Game starting...</div>
+
+        <div id="turnTimerDisplay" style="text-align: center; font-size: 1.5em; font-weight: bold; margin: 10px 0; display: none;">
+            <span id="timerText">Time: </span><span id="timerValue">120</span>s
+        </div>
+
+        <div class="game-main">
+            <div class="board-container">
+                <div class="board" id="gameBoard">
+                    <!-- Board cells will be inserted here -->
+                </div>
+            </div>
+
+            <div class="pieces-container" id="piecesContainer">
+                <h2>Your Pieces</h2>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="rotatePiece()">Rotate</button>
+                    <button class="btn btn-secondary" onclick="flipPiece()">Flip</button>
+                    <button class="btn btn-secondary" onclick="deselectPiece()">Deselect</button>
+                </div>
+                <div class="pieces-grid" id="piecesGrid">
+                    <!-- Pieces will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-success" onclick="skipTurn()" id="skipBtn">Skip Turn</button>
+            <button class="btn btn-danger" onclick="leaveGame()">Leave Game</button>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="game-over-modal" id="gameOverModal">
+        <div class="game-over-content">
+            <h2>Game Over!</h2>
+            <div class="final-scores" id="finalScores">
+                <!-- Final scores will be inserted here -->
+            </div>
+            <button class="btn btn-success" onclick="backToLobby()">Back to Lobby</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (CDN version 10.x) -->
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getDatabase, ref, set, get, onValue, update, remove, push, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+        // ============================================================================
+        // FIREBASE CONFIGURATION
+        // ============================================================================
+        // Firebase configuration from Firebase Console
+        const firebaseConfig = {
+            apiKey: "AIzaSyAiMXVth4AtETioyAahDPCY3aXfzHxdvRg",
+            authDomain: "pixwar-baf7e.firebaseapp.com",
+            databaseURL: "https://pixwar-baf7e-default-rtdb.firebaseio.com",
+            projectId: "pixwar-baf7e",
+            storageBucket: "pixwar-baf7e.firebasestorage.app",
+            messagingSenderId: "497484070996",
+            appId: "1:497484070996:web:2be917a65754c6544badc1",
+            measurementId: "G-FJ5DXGDYQN"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Make Firebase functions globally accessible
+        window.firebaseDB = {
+            ref: ref,
+            set: set,
+            get: get,
+            onValue: onValue,
+            update: update,
+            remove: remove,
+            push: push,
+            onDisconnect: onDisconnect,
+            database: database
+        };
+
+        console.log('Firebase initialized successfully');
+    </script>
+
+    <script>
+        // ============================================================================
+        // BLOKUS PIECE DEFINITIONS (21 polyominoes)
+        // ============================================================================
+        const PIECE_SHAPES = [
+            [[1]], // 1 square
+            [[1,1]], // 2 squares
+            [[1,1,1]], // 3 squares - line
+            [[1,1],[1,0]], // 3 squares - L
+            [[1,1,1,1]], // 4 squares - line
+            [[1,1,1],[1,0,0]], // 4 squares - L
+            [[1,1,1],[0,1,0]], // 4 squares - T
+            [[1,1,0],[0,1,1]], // 4 squares - Z
+            [[1,1],[1,1]], // 4 squares - square
+            [[1,1,1,1,1]], // 5 squares - line
+            [[1,1,1,1],[1,0,0,0]], // 5 squares - L
+            [[1,1,1,1],[0,0,0,1]], // 5 squares - L mirror
+            [[1,1,1],[1,1,0]], // 5 squares - P
+            [[1,1,1],[0,1,1]], // 5 squares - P mirror
+            [[1,1,1],[0,1,0],[0,1,0]], // 5 squares - T
+            [[1,1,0],[0,1,0],[0,1,1]], // 5 squares - Z
+            [[0,1,0],[1,1,1],[0,1,0]], // 5 squares - +
+            [[1,1,1],[1,0,1]], // 5 squares - U
+            [[1,1,0],[0,1,1],[0,0,1]], // 5 squares - W
+            [[0,1,1],[1,1,0],[1,0,0]], // 5 squares - N
+            [[1,0,0],[1,1,1],[0,0,1]], // 5 squares - Y
+        ];
+
+        // ============================================================================
+        // GAME STATE
+        // ============================================================================
+        const game = {
+            mode: null, // 1, 2, 3, or 4 players
+            roomCode: null,
+            playerId: null, // 0-3
+            playerColor: null, // 'blue', 'red', 'yellow', or 'green'
+            userId: null, // User ID for authentication
+            playerNickname: null,
+            turnTimeLimit: 120, // Turn time limit for current room (5-300 seconds)
+            board: Array(14).fill(null).map(() => Array(14).fill(null)),
+            players: [
+                { name: 'Player 1', color: 'blue', pieces: [], cornerX: 0, cornerY: 0, isAI: false, skipCount: 0 },
+                { name: 'Player 2', color: 'red', pieces: [], cornerX: 13, cornerY: 0, isAI: false, skipCount: 0 },
+                { name: 'Player 3', color: 'yellow', pieces: [], cornerX: 13, cornerY: 13, isAI: false, skipCount: 0 },
+                { name: 'Player 4', color: 'green', pieces: [], cornerX: 0, cornerY: 13, isAI: false, skipCount: 0 }
+            ],
+            currentPlayerIndex: 0,
+            selectedPieceIndex: null,
+            gameStarted: false,
+            passCount: 0,
+            dbListener: null,
+            roomListListener: null,
+            turnTimer: null,
+            turnTimeRemaining: 120,
+            turnTimerInterval: null
+        };
+
+        let lastPreviewCells = [];
+
+        // ============================================================================
+        // NICKNAME & NAVIGATION
+        // ============================================================================
+
+        // Check for saved user on load
+        window.addEventListener('load', () => {
+            const savedUserId = localStorage.getItem('pixwarUserId');
+            const savedNickname = localStorage.getItem('pixwarNickname');
+            if (savedUserId && savedNickname) {
+                game.userId = savedUserId;
+                game.playerNickname = savedNickname;
+                console.log(`Auto-login: ${savedNickname} (${savedUserId})`);
+            }
+        });
+
+        // Utility function to hide all screens
+        function hideAllScreens() {
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('signupScreen').classList.add('hidden');
+            document.getElementById('howToPlay').classList.add('hidden');
+            document.getElementById('lobbyMain').classList.add('hidden');
+            document.getElementById('createRoomSettings').classList.add('hidden');
+            document.getElementById('roomListView').classList.add('hidden');
+            document.getElementById('createRoomView').classList.add('hidden');
+            document.getElementById('joinRoomView').classList.add('hidden');
+        }
+
+        // ============================================================================
+        // AUTHENTICATION FUNCTIONS
+        // ============================================================================
+
+        function showLoginScreen() {
+            hideAllScreens();
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginUserId').focus();
+        }
+
+        function showSignupScreen() {
+            hideAllScreens();
+            document.getElementById('signupScreen').classList.remove('hidden');
+            document.getElementById('signupUserId').focus();
+        }
+
+        async function signup() {
+            const userId = document.getElementById('signupUserId').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const nickname = document.getElementById('signupNickname').value.trim();
+
+            // Validation
+            if (userId.length < 1) {
+                alert('아이디를 입력해주세요.');
+                return;
+            }
+            if (password.length < 1) {
+                alert('비밀번호를 입력해주세요.');
+                return;
+            }
+            if (nickname.length < 1) {
+                alert('닉네임을 입력해주세요.');
+                return;
+            }
+
+            try {
+                // Check if userId already exists
+                const userIdRef = window.firebaseDB.ref(window.firebaseDB.database, `users/${userId}`);
+                const userIdSnapshot = await window.firebaseDB.get(userIdRef);
+                if (userIdSnapshot.exists()) {
+                    alert('이미 존재하는 아이디입니다.');
+                    return;
+                }
+
+                // Check if nickname already exists
+                const usersRef = window.firebaseDB.ref(window.firebaseDB.database, 'users');
+                const usersSnapshot = await window.firebaseDB.get(usersRef);
+                if (usersSnapshot.exists()) {
+                    const users = usersSnapshot.val();
+                    for (const uid in users) {
+                        if (users[uid].nickname === nickname) {
+                            alert('이미 존재하는 닉네임입니다.');
+                            return;
+                        }
+                    }
+                }
+
+                // Create new user
+                await window.firebaseDB.set(userIdRef, {
+                    password: password, // In production, hash this!
+                    nickname: nickname,
+                    createdAt: Date.now()
+                });
+
+                alert('회원가입이 완료되었습니다!');
+                showLoginScreen();
+                document.getElementById('loginUserId').value = userId;
+            } catch (error) {
+                console.error('Signup error:', error);
+                alert('회원가입에 실패했습니다. 다시 시도해주세요.');
+            }
+        }
+
+        async function login() {
+            const userId = document.getElementById('loginUserId').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!userId || !password) {
+                alert('아이디와 비밀번호를 입력해주세요.');
+                return;
+            }
+
+            try {
+                const userRef = window.firebaseDB.ref(window.firebaseDB.database, `users/${userId}`);
+                const snapshot = await window.firebaseDB.get(userRef);
+
+                if (!snapshot.exists()) {
+                    alert('존재하지 않는 아이디입니다.');
+                    return;
+                }
+
+                const userData = snapshot.val();
+                if (userData.password !== password) {
+                    alert('비밀번호가 일치하지 않습니다.');
+                    return;
+                }
+
+                // Login success
+                game.userId = userId;
+                game.playerNickname = userData.nickname;
+                localStorage.setItem('pixwarUserId', userId);
+                localStorage.setItem('pixwarNickname', userData.nickname);
+
+                console.log(`Login success: ${userData.nickname} (${userId})`);
+
+                // Show lobby
+                document.getElementById('displayNickname').textContent = userData.nickname;
+                hideAllScreens();
+                document.getElementById('lobbyMain').classList.remove('hidden');
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('로그인에 실패했습니다. 다시 시도해주세요.');
+            }
+        }
+
+        function logout() {
+            if (confirm('로그아웃 하시겠습니까?')) {
+                game.userId = null;
+                game.playerNickname = null;
+                localStorage.removeItem('pixwarUserId');
+                localStorage.removeItem('pixwarNickname');
+                document.getElementById('loginUserId').value = '';
+                document.getElementById('loginPassword').value = '';
+                hideAllScreens();
+                document.getElementById('mainMenu').classList.remove('hidden');
+            }
+        }
+
+        function showCreateRoomSettings() {
+            hideAllScreens();
+            document.getElementById('createRoomSettings').classList.remove('hidden');
+        }
+
+        function showNicknameInput() {
+            const savedNickname = localStorage.getItem('pixwarNickname');
+            if (savedNickname) {
+                game.playerNickname = savedNickname;
+                document.getElementById('displayNickname').textContent = savedNickname;
+                hideAllScreens();
+                document.getElementById('lobbyMain').classList.remove('hidden');
+            } else {
+                hideAllScreens();
+                document.getElementById('nicknameInput').classList.remove('hidden');
+                document.getElementById('playerNickname').focus();
+            }
+        }
+
+        function setNickname() {
+            const nickname = document.getElementById('playerNickname').value.trim();
+            if (!nickname || nickname.length < 2) {
+                alert('닉네임은 최소 2글자 이상이어야 합니다.');
+                return;
+            }
+
+            // Simple localStorage-based nickname system
+            game.playerNickname = nickname;
+            localStorage.setItem('pixwarNickname', nickname);
+            document.getElementById('displayNickname').textContent = nickname;
+
+            hideAllScreens();
+            document.getElementById('lobbyMain').classList.remove('hidden');
+        }
+
+        function showHowToPlay() {
+            hideAllScreens();
+            document.getElementById('howToPlay').classList.remove('hidden');
+        }
+
+        function backToMainMenu() {
+            hideAllScreens();
+            document.getElementById('mainMenu').classList.remove('hidden');
+        }
+
+        function logout() {
+            if (confirm('닉네임을 변경하시겠습니까?')) {
+                localStorage.removeItem('pixwarNickname');
+                game.playerNickname = null;
+                document.getElementById('playerNickname').value = '';
+                hideAllScreens();
+                document.getElementById('nicknameInput').classList.remove('hidden');
+                document.getElementById('playerNickname').focus();
+            }
+        }
+
+        function backToLobby() {
+            // Clean up room list listener if exists
+            if (game.roomListListener) {
+                game.roomListListener();
+                game.roomListListener = null;
+            }
+
+            hideAllScreens();
+            document.getElementById('lobbyMain').classList.remove('hidden');
+        }
+
+        // ============================================================================
+        // GAME MODE - REMOVED (Now dynamic player count)
+        // ============================================================================
+
+        // ============================================================================
+        // FIREBASE ROOM MANAGEMENT
+        // ============================================================================
+
+        // Generate a random 6-digit room code
+        function generateRoomCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // Get required player count for mode
+        function getRequiredPlayers(mode) {
+            if (mode === 1) return 1; // 1 human + 3 AI
+            if (mode === 2) return 2;
+            if (mode === 3) return 3; // 3 human + 1 AI
+            if (mode === 4) return 4;
+            return 2;
+        }
+
+        // Create a new room
+        function createRoomWithSettings() {
+            const turnTimeLimit = parseInt(document.getElementById('turnTimeLimit').value);
+            createRoom(turnTimeLimit);
+        }
+
+        async function createRoom(turnTimeLimit = 120) {
+            if (!game.playerNickname) {
+                alert('로그인이 필요합니다.');
+                return;
+            }
+
+            const roomCode = generateRoomCode();
+            const roomRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}`);
+
+            // Initialize pieces for all players
+            const createInitialPieces = () => PIECE_SHAPES.map((shape, index) => ({
+                shapeIndex: index,
+                used: false,
+                rotation: 0,
+                flipped: false
+            }));
+
+            const colors = ['blue', 'red', 'yellow', 'green'];
+
+            // Initialize players object - all slots start empty except host
+            const players = {};
+            const pieces = {};
+
+            for (let i = 0; i < 4; i++) {
+                players[i] = {
+                    connected: i === 0,
+                    color: colors[i],
+                    name: i === 0 ? game.playerNickname : null,
+                    ready: i === 0, // Host is auto-ready
+                    isAI: false, // All initial players are human
+                    skipCount: 0 // Track timeout skips
+                };
+                pieces[i] = createInitialPieces();
+            }
+
+            const roomData = {
+                maxPlayers: 4,
+                currentPlayers: 1,
+                turnTimeLimit: turnTimeLimit, // Room-specific turn time limit
+                players: players,
+                gameState: {
+                    board: Array(14).fill(null).map(() => Array(14).fill(null)),
+                    pieces: pieces,
+                    currentPlayerIndex: 0,
+                    passCount: 0,
+                    gameStarted: false,
+                    gameOver: false
+                },
+                createdAt: Date.now()
+            };
+
+            try {
+                await window.firebaseDB.set(roomRef, roomData);
+
+                // Set up disconnect handler - remove room if host disconnects
+                const connectedRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}/players/0/connected`);
+                window.firebaseDB.onDisconnect(connectedRef).set(false);
+                window.firebaseDB.onDisconnect(roomRef).remove();
+
+                game.roomCode = roomCode;
+                game.playerId = 0;
+                game.playerColor = 'blue';
+
+                // Show room code to user
+                document.getElementById('displayRoomCode').textContent = roomCode;
+                hideAllScreens();
+                document.getElementById('createRoomView').classList.remove('hidden');
+
+                // Show start button for host
+                document.getElementById('startBtn').style.display = 'inline-block';
+
+                // Listen for players joining
+                listenForPlayers(roomCode);
+
+                console.log(`Room created: ${roomCode}`);
+            } catch (error) {
+                console.error('Error creating room:', error);
+                alert('방 생성에 실패했습니다. 다시 시도해주세요.');
+            }
+        }
+
+        // Update waiting room player list
+        function updateWaitingRoom(roomData) {
+            const playersList = document.getElementById('playersList');
+            const waitingMessage = document.getElementById('waitingMessage');
+            const readyBtn = document.getElementById('readyBtn');
+            const startBtn = document.getElementById('startBtn');
+
+            if (!playersList) return;
+
+            playersList.innerHTML = '';
+
+            const colors = ['blue', 'red', 'yellow', 'green'];
+            const connectedPlayers = Object.values(roomData.players).filter(p => p.connected).length;
+            const readyPlayers = Object.values(roomData.players).filter(p => p.connected && p.ready).length;
+
+            // Show all 4 slots
+            for (let i = 0; i < 4; i++) {
+                const player = roomData.players[i];
+                const playerSlot = document.createElement('div');
+                playerSlot.className = `player-slot ${player.connected ? 'connected' : 'waiting'}`;
+
+                const colorDot = document.createElement('div');
+                colorDot.className = `player-color-dot ${colors[i]}`;
+
+                const playerName = document.createElement('div');
+                playerName.className = 'player-name';
+                playerName.textContent = player.connected ? player.name : '빈 슬롯';
+
+                const playerStatus = document.createElement('div');
+                if (player.connected) {
+                    playerStatus.className = `player-status ${player.ready ? 'ready' : 'not-ready'}`;
+                    playerStatus.textContent = player.ready ? '✓ 준비 완료' : '준비 중...';
+                } else {
+                    playerStatus.className = 'player-status';
+                    playerStatus.textContent = '대기 중';
+                }
+
+                playerSlot.appendChild(colorDot);
+                playerSlot.appendChild(playerName);
+                playerSlot.appendChild(playerStatus);
+
+                playersList.appendChild(playerSlot);
+            }
+
+            waitingMessage.textContent = `${connectedPlayers}/4 플레이어 | ${readyPlayers}명 준비 완료`;
+
+            // Show ready button for all players
+            if (!roomData.gameState.gameStarted) {
+                readyBtn.style.display = 'inline-block';
+                const myPlayer = roomData.players[game.playerId];
+                if (myPlayer && myPlayer.ready) {
+                    readyBtn.textContent = '준비 취소';
+                    readyBtn.classList.remove('btn-success');
+                    readyBtn.classList.add('btn-secondary');
+                } else {
+                    readyBtn.textContent = '준비';
+                    readyBtn.classList.remove('btn-secondary');
+                    readyBtn.classList.add('btn-success');
+                }
+            } else {
+                readyBtn.style.display = 'none';
+            }
+
+            // Show start button for everyone - enable only if all ready
+            startBtn.style.display = 'inline-block';
+            startBtn.disabled = readyPlayers < connectedPlayers;
+            if (startBtn.disabled) {
+                startBtn.title = '모든 플레이어가 준비해야 합니다';
+            } else {
+                if (connectedPlayers === 2) {
+                    startBtn.title = '2명으로 게임 시작 (AI 없음)';
+                } else if (connectedPlayers === 3) {
+                    startBtn.title = '3명으로 게임 시작 (AI 1명)';
+                } else if (connectedPlayers === 1) {
+                    startBtn.title = '혼자 플레이 (AI 3명과 대전)';
+                } else {
+                    startBtn.title = `${connectedPlayers}명으로 게임 시작`;
+                }
+            }
+        }
+
+        // Toggle ready status
+        async function toggleReady() {
+            if (!game.roomCode || game.playerId === null) return;
+
+            const playerRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/players/${game.playerId}/ready`);
+            const snapshot = await window.firebaseDB.get(playerRef);
+            const currentReady = snapshot.val() || false;
+
+            await window.firebaseDB.set(playerRef, !currentReady);
+        }
+
+        // Host starts the game
+        async function startGameByHost() {
+            if (!game.roomCode) return;
+
+            const roomRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}`);
+            const snapshot = await window.firebaseDB.get(roomRef);
+            const roomData = snapshot.val();
+
+            if (!roomData) return;
+
+            const connectedPlayers = Object.values(roomData.players).filter(p => p.connected).length;
+            const readyPlayers = Object.values(roomData.players).filter(p => p.connected && p.ready).length;
+
+            if (readyPlayers < connectedPlayers) {
+                alert('모든 플레이어가 준비 상태여야 합니다.');
+                return;
+            }
+
+            // Fill empty slots with AI players based on player count
+            const playersRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/players`);
+            const updates = {};
+
+            // Determine AI setup based on connected players
+            if (connectedPlayers === 2) {
+                // 2 players: No AI, keep slots 2 and 3 empty
+                for (let i = 0; i < 4; i++) {
+                    if (!roomData.players[i].connected) {
+                        updates[`${i}/isAI`] = false;
+                    }
+                }
+            } else if (connectedPlayers === 3) {
+                // 3 players: Add 1 AI to the 4th slot
+                for (let i = 0; i < 4; i++) {
+                    if (!roomData.players[i].connected) {
+                        updates[`${i}/connected`] = true;
+                        updates[`${i}/name`] = `AI ${i + 1}`;
+                        updates[`${i}/ready`] = true;
+                        updates[`${i}/isAI`] = true;
+                        game.players[i].isAI = true;
+                        break; // Only add one AI
+                    }
+                }
+            } else {
+                // 1 or 4 players: Fill all empty slots with AI
+                for (let i = 0; i < 4; i++) {
+                    if (!roomData.players[i].connected) {
+                        updates[`${i}/connected`] = true;
+                        updates[`${i}/name`] = `AI ${i + 1}`;
+                        updates[`${i}/ready`] = true;
+                        updates[`${i}/isAI`] = true;
+                        game.players[i].isAI = true;
+                    }
+                }
+            }
+
+            // Apply AI player updates
+            if (Object.keys(updates).length > 0) {
+                await window.firebaseDB.update(playersRef, updates);
+            }
+
+            // Mark game as started
+            const gameStartedRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/gameState/gameStarted`);
+            await window.firebaseDB.set(gameStartedRef, true);
+
+            // Start game will be triggered by listener
+        }
+
+        // Handle disconnected players during game
+        async function handleDisconnectedPlayers(roomCode, roomData) {
+            const now = Date.now();
+            const RECONNECT_GRACE_PERIOD = 30000; // 30 seconds
+
+            for (let i = 0; i < 4; i++) {
+                const player = roomData.players[i];
+
+                // Skip if player was never connected or is already AI
+                if (!player || player.isAI) continue;
+
+                // Player just disconnected - mark the time
+                if (!player.connected && !player.disconnectedAt) {
+                    const playerRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}/players/${i}/disconnectedAt`);
+                    await window.firebaseDB.set(playerRef, now);
+                    console.log(`Player ${i} (${player.name}) disconnected. Grace period started.`);
+                    showMessage(`⚠️ ${player.name}님의 연결이 끊어졌습니다. 30초 안에 재접속하지 않으면 AI로 대체됩니다.`);
+                }
+
+                // Player reconnected - clear disconnection timer
+                if (player.connected && player.disconnectedAt) {
+                    const playerRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}/players/${i}/disconnectedAt`);
+                    await window.firebaseDB.set(playerRef, null);
+                    console.log(`Player ${i} (${player.name}) reconnected!`);
+                    showMessage(`✅ ${player.name}님이 재접속했습니다!`);
+                }
+
+                // Player still disconnected after grace period - replace with AI
+                if (!player.connected && player.disconnectedAt && (now - player.disconnectedAt) > RECONNECT_GRACE_PERIOD) {
+                    console.log(`Player ${i} (${player.name}) did not reconnect. Replacing with AI.`);
+
+                    const playerUpdates = {
+                        [`${i}/isAI`]: true,
+                        [`${i}/name`]: `AI (${player.name})`,
+                        [`${i}/connected`]: true,
+                        [`${i}/disconnectedAt`]: null
+                    };
+
+                    const playersRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}/players`);
+                    await window.firebaseDB.update(playersRef, playerUpdates);
+
+                    // Update local game state
+                    game.players[i].isAI = true;
+                    game.players[i].name = `AI (${player.name})`;
+
+                    showMessage(`🤖 ${player.name}님이 재접속하지 않아 AI로 대체되었습니다.`);
+
+                    // If it's AI's turn and not the current player, trigger AI move
+                    if (game.currentPlayerIndex === i && i !== game.playerId) {
+                        setTimeout(() => {
+                            aiMove();
+                        }, 1000);
+                    }
+                }
+            }
+        }
+
+        // Listen for players joining (updated for multi-player)
+        function listenForPlayers(roomCode) {
+            const roomRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}`);
+
+            window.firebaseDB.onValue(roomRef, async (snapshot) => {
+                const roomData = snapshot.val();
+                if (!roomData) return;
+
+                const connectedPlayers = Object.values(roomData.players).filter(p => p.connected).length;
+                console.log(`Players: ${connectedPlayers}/4`);
+
+                // Update waiting room UI
+                updateWaitingRoom(roomData);
+
+                // Update room data
+                const currentPlayersRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}/currentPlayers`);
+                window.firebaseDB.set(currentPlayersRef, connectedPlayers);
+
+                // Handle disconnected players during game
+                if (roomData.gameState.gameStarted && game.gameStarted) {
+                    await handleDisconnectedPlayers(roomCode, roomData);
+                }
+
+                // Start game when host triggers it
+                if (roomData.gameState.gameStarted && !game.gameStarted) {
+                    console.log('Game started by host!');
+                    startGame();
+                }
+            });
+        }
+
+        // Show room list
+        async function showRoomList() {
+            hideAllScreens();
+            document.getElementById('roomListView').classList.remove('hidden');
+
+            // Listen to all rooms
+            const roomsRef = window.firebaseDB.ref(window.firebaseDB.database, 'rooms');
+
+            // Remove old listener if exists
+            if (game.roomListListener) {
+                game.roomListListener();
+            }
+
+            game.roomListListener = window.firebaseDB.onValue(roomsRef, (snapshot) => {
+                const rooms = snapshot.val();
+                const roomListContainer = document.getElementById('roomListContainer');
+                roomListContainer.innerHTML = '';
+
+                console.log('Room list updated:', rooms); // Debug log
+
+                if (!rooms) {
+                    roomListContainer.innerHTML = '<div class="no-rooms">사용 가능한 방이 없습니다.<br>방을 직접 만들어보세요!</div>';
+                    return;
+                }
+
+                const roomList = Object.entries(rooms)
+                    .filter(([code, data]) => {
+                        // Filter: not full and not started
+                        const isValid = data && data.gameState && !data.gameState.gameStarted &&
+                               data.currentPlayers < data.maxPlayers;
+                        console.log(`Room ${code}: valid=${isValid}, data:`, data); // Debug log
+                        return isValid;
+                    })
+                    .sort((a, b) => b[1].createdAt - a[1].createdAt); // Sort by newest first
+
+                console.log('Filtered room list:', roomList.length); // Debug log
+
+                if (roomList.length === 0) {
+                    roomListContainer.innerHTML = '<div class="no-rooms">참가 가능한 방이 없습니다.<br>방을 직접 만들어보세요!</div>';
+                    return;
+                }
+
+                roomList.forEach(([roomCode, roomData]) => {
+                    const roomItem = document.createElement('div');
+                    roomItem.className = 'room-item';
+
+                    const isFull = roomData.currentPlayers >= roomData.maxPlayers;
+                    const statusClass = isFull ? 'full' : 'waiting';
+                    const statusText = isFull ? '가득 참' : `대기 중 (${roomData.currentPlayers}/${roomData.maxPlayers})`;
+
+                    roomItem.innerHTML = `
+                        <div class="room-info-left">
+                            <div class="room-name">${roomData.host}님의 방</div>
+                            <div class="room-details">방 코드: ${roomCode}</div>
+                        </div>
+                        <div>
+                            <span class="room-status ${statusClass}">${statusText}</span>
+                            ${!isFull ? `<button class="btn btn-success" onclick="joinRoomByCode('${roomCode}')">참가</button>` : ''}
+                        </div>
+                    `;
+
+                    roomListContainer.appendChild(roomItem);
+                });
+            });
+        }
+
+        // Join room by code (from room list)
+        async function joinRoomByCode(roomCode) {
+            await joinRoom(roomCode);
+        }
+
+        // Join an existing room
+        async function joinRoom(roomCode = null) {
+            if (!roomCode) {
+                roomCode = document.getElementById('roomCodeInput')?.value.trim();
+            }
+
+            if (!game.playerNickname) {
+                alert('닉네임을 먼저 설정해주세요.');
+                return;
+            }
+
+            if (!roomCode || roomCode.length !== 6) {
+                alert('올바른 6자리 방 코드를 입력해주세요.');
+                return;
+            }
+
+            const roomRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}`);
+
+            try {
+                const snapshot = await window.firebaseDB.get(roomRef);
+
+                if (!snapshot.exists()) {
+                    alert('방을 찾을 수 없습니다. 코드를 확인해주세요.');
+                    return;
+                }
+
+                const roomData = snapshot.val();
+
+                if (roomData.gameState.gameStarted) {
+                    alert('이미 시작된 게임입니다.');
+                    return;
+                }
+
+                // Find available player slot
+                let availableSlot = -1;
+                const colors = ['blue', 'red', 'yellow', 'green'];
+
+                for (let i = 0; i < 4; i++) {
+                    if (!roomData.players[i].connected) {
+                        availableSlot = i;
+                        break;
+                    }
+                }
+
+                if (availableSlot === -1) {
+                    alert('방이 가득 찼습니다.');
+                    return;
+                }
+
+                // Join as available player
+                const playerRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}/players/${availableSlot}`);
+                await window.firebaseDB.update(playerRef, {
+                    connected: true,
+                    name: game.playerNickname,
+                    ready: false,
+                    isAI: false // Joining player is always human
+                });
+
+                // Set up disconnect handler
+                const connectedRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${roomCode}/players/${availableSlot}/connected`);
+                window.firebaseDB.onDisconnect(connectedRef).set(false);
+
+                game.roomCode = roomCode;
+                game.playerId = availableSlot;
+                game.playerColor = colors[availableSlot];
+
+                console.log(`Joined room: ${roomCode} as Player ${availableSlot} (${game.playerColor})`);
+
+                // Hide all screens, show waiting room
+                hideAllScreens();
+                document.getElementById('displayRoomCode').textContent = roomCode;
+                document.getElementById('createRoomView').classList.remove('hidden');
+
+                // Show ready button for non-host players
+                document.getElementById('readyBtn').style.display = 'inline-block';
+
+                // Listen for game start
+                listenForPlayers(roomCode);
+            } catch (error) {
+                console.error('Error joining room:', error);
+                alert('방 참가에 실패했습니다. 다시 시도해주세요.');
+            }
+        }
+
+        // Cancel room creation
+        async function cancelRoom() {
+            if (game.roomCode) {
+                const roomRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}`);
+                await window.firebaseDB.remove(roomRef);
+            }
+
+            hideAllScreens();
+            document.getElementById('lobbyMain').classList.remove('hidden');
+            game.roomCode = null;
+        }
+
+        // Cancel join
+        function cancelJoin() {
+            hideAllScreens();
+            document.getElementById('lobbyMain').classList.remove('hidden');
+            document.getElementById('roomCodeInput').value = '';
+        }
+
+        // ============================================================================
+        // GAME START & FIREBASE SYNC
+        // ============================================================================
+
+        // Start the game
+        async function startGame() {
+            // Load room data to get AI player info and settings
+            const roomRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}`);
+            const snapshot = await window.firebaseDB.get(roomRef);
+            const roomData = snapshot.val();
+
+            if (roomData) {
+                // Load room settings
+                game.turnTimeLimit = roomData.turnTimeLimit || 120;
+                console.log(`🕒 Room turn time limit: ${game.turnTimeLimit} seconds`);
+
+                // Update local game.players with AI info and skip counts
+                for (let i = 0; i < 4; i++) {
+                    if (roomData.players[i]) {
+                        // Only set isAI if it's explicitly true in Firebase, otherwise false
+                        game.players[i].isAI = roomData.players[i].isAI === true;
+                        game.players[i].name = roomData.players[i].name || game.players[i].name;
+                        game.players[i].skipCount = roomData.players[i].skipCount || 0;
+                        console.log(`🎮 InitGame Player ${i}: isAI = ${game.players[i].isAI}, myPlayerId = ${game.playerId}, name = ${game.players[i].name}`);
+                    } else {
+                        // Ensure unconnected players are not AI unless explicitly set
+                        game.players[i].isAI = false;
+                    }
+                }
+            }
+
+            // Hide lobby, show game
+            document.getElementById('lobbyScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            document.getElementById('gameRoomCode').textContent = game.roomCode;
+
+            // Initialize game
+            initializePieces();
+            renderBoard();
+            renderPlayersInfo();
+            renderPieces();
+
+            // Start listening to game state changes
+            listenToGameState();
+
+            game.gameStarted = true;
+            updateMessage();
+        }
+
+        // Listen to real-time game state changes from Firebase
+        function listenToGameState() {
+            const gameStateRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/gameState`);
+            const playersRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/players`);
+
+            // Listen to players data to update isAI flags
+            window.firebaseDB.onValue(playersRef, (snapshot) => {
+                const players = snapshot.val();
+                if (!players) return;
+
+                // Update isAI flags from Firebase - be explicit about values
+                for (let i = 0; i < 4; i++) {
+                    if (players[i]) {
+                        // Only set isAI if it's explicitly true in Firebase
+                        game.players[i].isAI = players[i].isAI === true;
+                        game.players[i].name = players[i].name || game.players[i].name;
+                        console.log(`🎮 Player ${i}: isAI = ${game.players[i].isAI}, name = ${game.players[i].name}`);
+                    }
+                }
+            });
+
+            game.dbListener = window.firebaseDB.onValue(gameStateRef, (snapshot) => {
+                const state = snapshot.val();
+                if (!state) return;
+
+                console.log('🔄 Firebase state received:', state);
+
+                // Update local game state
+                // Firebase converts arrays to objects, so we need to convert them back
+                // Use Array.from with map to ensure proper array conversion
+                game.board = Array.from({ length: 14 }, (_, i) =>
+                    Array.from({ length: 14 }, (__, j) => state.board[i]?.[j] ?? null)
+                );
+
+                game.currentPlayerIndex = state.currentPlayerIndex;
+                game.passCount = state.passCount;
+
+                // Update pieces - ensure proper array conversion with correct indices
+                const pieces0 = state.pieces[0] || state.pieces['0'] || {};
+                const pieces1 = state.pieces[1] || state.pieces['1'] || {};
+                const pieces2 = state.pieces[2] || state.pieces['2'] || {};
+                const pieces3 = state.pieces[3] || state.pieces['3'] || {};
+
+                game.players[0].pieces = Array.from({ length: 21 }, (_, i) => pieces0[i]).filter(p => p);
+                game.players[1].pieces = Array.from({ length: 21 }, (_, i) => pieces1[i]).filter(p => p);
+                game.players[2].pieces = Array.from({ length: 21 }, (_, i) => pieces2[i]).filter(p => p);
+                game.players[3].pieces = Array.from({ length: 21 }, (_, i) => pieces3[i]).filter(p => p);
+
+                console.log('✅ Local game state updated:', {
+                    board: game.board,
+                    player0Pieces: game.players[0].pieces.length,
+                    player1Pieces: game.players[1].pieces.length,
+                    player2Pieces: game.players[2].pieces.length,
+                    player3Pieces: game.players[3].pieces.length,
+                    currentPlayerIndex: game.currentPlayerIndex,
+                    myPlayerId: game.playerId,
+                    isMyTurn: game.currentPlayerIndex === game.playerId
+                });
+
+                // Update UI
+                renderBoard();
+                renderPlayersInfo();
+                renderPieces();
+                updateMessage();
+
+                // Check for game over
+                if (state.gameOver) {
+                    endGame();
+                }
+            });
+
+            // Listen for opponent disconnection
+            const opponentId = game.playerId === 0 ? 1 : 0;
+            const opponentRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/players/${opponentId}/connected`);
+            window.firebaseDB.onValue(opponentRef, (snapshot) => {
+                if (snapshot.val() === false && game.gameStarted) {
+                    alert('상대방이 게임을 떠났습니다.');
+                    backToLobby();
+                }
+            });
+        }
+
+        // Sync game state to Firebase
+        async function syncGameState() {
+            if (!game.roomCode) return;
+
+            const gameStateRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/gameState`);
+
+            await window.firebaseDB.update(gameStateRef, {
+                board: game.board,
+                currentPlayerIndex: game.currentPlayerIndex,
+                passCount: game.passCount,
+                pieces: {
+                    0: game.players[0].pieces,
+                    1: game.players[1].pieces,
+                    2: game.players[2].pieces,
+                    3: game.players[3].pieces
+                }
+            });
+        }
+
+        // ============================================================================
+        // PIECE MANAGEMENT
+        // ============================================================================
+
+        function initializePieces() {
+            game.players.forEach(player => {
+                player.pieces = PIECE_SHAPES.map((shape, index) => ({
+                    shapeIndex: index,
+                    used: false,
+                    rotation: 0,
+                    flipped: false
+                }));
+            });
+        }
+
+        function rotateShape(shape) {
+            // Create completely new array to avoid mutations
+            const rows = shape.length;
+            const cols = shape[0].length;
+            const rotated = [];
+
+            for (let c = 0; c < cols; c++) {
+                rotated[c] = [];
+                for (let r = 0; r < rows; r++) {
+                    rotated[c][r] = shape[rows - 1 - r][c];
+                }
+            }
+            return rotated;
+        }
+
+        function flipShape(shape) {
+            // Create completely new array to avoid mutations
+            return shape.map(row => [...row].reverse());
+        }
+
+        function getCurrentShape(piece) {
+            // Get base shape from PIECE_SHAPES using shapeIndex
+            // Always create a fresh deep copy
+            let shape = JSON.parse(JSON.stringify(PIECE_SHAPES[piece.shapeIndex]));
+
+            console.log('🔧 Getting shape for piece:', {
+                shapeIndex: piece.shapeIndex,
+                rotation: piece.rotation,
+                flipped: piece.flipped,
+                originalShape: PIECE_SHAPES[piece.shapeIndex]
+            });
+
+            if (piece.flipped) {
+                shape = flipShape(shape);
+                console.log('After flip:', shape);
+            }
+
+            for (let i = 0; i < (piece.rotation % 4); i++) {
+                shape = rotateShape(shape);
+                console.log(`After rotation ${i + 1}:`, shape);
+            }
+
+            console.log('Final shape:', shape);
+            return shape;
+        }
+
+        // ============================================================================
+        // RENDERING FUNCTIONS
+        // ============================================================================
+
+        function renderBoard() {
+            const boardElement = document.getElementById('gameBoard');
+            const isFirstRender = boardElement.children.length === 0;
+
+            if (isFirstRender) {
+                boardElement.innerHTML = '';
+
+                // Event delegation
+                boardElement.addEventListener('click', (e) => {
+                    const cell = e.target.closest('.cell');
+                    if (cell) {
+                        const row = parseInt(cell.dataset.row);
+                        const col = parseInt(cell.dataset.col);
+                        handleCellClick(row, col);
+                    }
+                });
+
+                // Desktop: mouseover
+                boardElement.addEventListener('mouseover', (e) => {
+                    const cell = e.target.closest('.cell');
+                    if (cell) {
+                        const row = parseInt(cell.dataset.row);
+                        const col = parseInt(cell.dataset.col);
+                        showPreview(row, col);
+                    }
+                });
+
+                // Mobile: touchstart
+                boardElement.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const cell = element?.closest('.cell');
+                    if (cell) {
+                        const row = parseInt(cell.dataset.row);
+                        const col = parseInt(cell.dataset.col);
+                        showPreview(row, col);
+                    }
+                }, { passive: true });
+
+                // Mobile: touchmove
+                boardElement.addEventListener('touchmove', (e) => {
+                    const touch = e.touches[0];
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const cell = element?.closest('.cell');
+                    if (cell) {
+                        const row = parseInt(cell.dataset.row);
+                        const col = parseInt(cell.dataset.col);
+                        showPreview(row, col);
+                    }
+                }, { passive: true });
+
+                // Create cells
+                for (let r = 0; r < 14; r++) {
+                    for (let c = 0; c < 14; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = r;
+                        cell.dataset.col = c;
+
+                        // Mark all 4 corners
+                        if ((r === 0 && c === 0) || (r === 0 && c === 13) || (r === 13 && c === 0) || (r === 13 && c === 13)) {
+                            cell.classList.add('corner');
+                        }
+
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            // Update cell states
+            for (let r = 0; r < 14; r++) {
+                for (let c = 0; c < 14; c++) {
+                    const cell = boardElement.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                    if (!cell) continue;
+
+                    cell.className = 'cell';
+
+                    // Mark all 4 corners
+                    if ((r === 0 && c === 0) || (r === 0 && c === 13) || (r === 13 && c === 0) || (r === 13 && c === 13)) {
+                        cell.classList.add('corner');
+                    }
+
+                    // Highlight starting corners for each player's first piece
+                    for (let i = 0; i < game.players.length; i++) {
+                        const player = game.players[i];
+                        const isFirstPiece = player && player.pieces && player.pieces.every(p => !p.used);
+
+                        if (isFirstPiece && r === player.cornerY && c === player.cornerX) {
+                            cell.classList.add('start-corner');
+                            const colors = { blue: '#2196F3', red: '#F44336', yellow: '#FFC107', green: '#4CAF50' };
+                            cell.style.background = colors[player.color] || player.color;
+                            cell.style.opacity = '0.5';
+                        }
+                    }
+
+                    // Filled cells
+                    if (game.board[r][c]) {
+                        cell.classList.add('filled', game.board[r][c]);
+                    }
+                }
+            }
+        }
+
+        function renderPlayersInfo() {
+            const playersInfo = document.getElementById('playersInfo');
+            playersInfo.innerHTML = '';
+
+            game.players.forEach((player, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = `player-info ${player.color}`;
+                if (index === game.currentPlayerIndex) {
+                    playerDiv.classList.add('active');
+                }
+
+                const usedPieces = player.pieces.filter(p => p.used).length;
+                const totalSquares = player.pieces.reduce((sum, piece) => {
+                    if (!piece.used) {
+                        const shape = PIECE_SHAPES[piece.shapeIndex];
+                        return sum + shape.flat().filter(cell => cell === 1).length;
+                    }
+                    return sum;
+                }, 0);
+
+                const playerLabel = index === game.playerId ? 'You' : 'Opponent';
+
+                playerDiv.innerHTML = `
+                    <div class="name">${playerLabel} (${player.color})</div>
+                    <div class="pieces-left">Pieces: ${21 - usedPieces}/21</div>
+                    <div class="pieces-left">Squares left: ${totalSquares}</div>
+                `;
+
+                playersInfo.appendChild(playerDiv);
+            });
+        }
+
+        function renderPieces() {
+            const piecesGrid = document.getElementById('piecesGrid');
+            piecesGrid.innerHTML = '';
+
+            const currentPlayer = game.players[game.playerId];
+            const isMyTurn = game.currentPlayerIndex === game.playerId;
+
+            console.log('🎨 Rendering pieces - My turn:', isMyTurn, 'Player:', game.playerId, 'Current:', game.currentPlayerIndex);
+
+            // Always show player's own pieces, but disable interaction when not their turn
+            if (!currentPlayer || !currentPlayer.pieces || currentPlayer.pieces.length === 0) {
+                console.log('⚠️ No pieces to render');
+                piecesGrid.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">Loading pieces...</p>';
+                return;
+            }
+
+            currentPlayer.pieces.forEach((piece, index) => {
+                if (!piece || piece.shapeIndex === undefined) {
+                    console.log('⚠️ Invalid piece at index', index, piece);
+                    return;
+                }
+
+                const pieceDiv = document.createElement('div');
+                pieceDiv.className = 'piece';
+                if (piece.used) {
+                    pieceDiv.classList.add('used');
+                }
+                if (game.selectedPieceIndex === index) {
+                    pieceDiv.classList.add('selected');
+                }
+
+                const shape = getCurrentShape(piece);
+                const shapeDiv = document.createElement('div');
+                shapeDiv.className = 'piece-shape';
+                shapeDiv.style.gridTemplateColumns = `repeat(${shape[0].length}, 12px)`;
+                shapeDiv.style.gridTemplateRows = `repeat(${shape.length}, 12px)`;
+
+                shape.forEach(row => {
+                    row.forEach(cell => {
+                        const cellDiv = document.createElement('div');
+                        cellDiv.className = 'piece-cell';
+                        if (cell === 1) {
+                            cellDiv.classList.add('filled', currentPlayer.color);
+                        }
+                        shapeDiv.appendChild(cellDiv);
+                    });
+                });
+
+                pieceDiv.appendChild(shapeDiv);
+                // Only allow clicking if it's the player's turn and piece is not used
+                if (!piece.used && isMyTurn) {
+                    pieceDiv.addEventListener('click', () => selectPiece(index));
+                    pieceDiv.style.cursor = 'pointer';
+                } else if (!isMyTurn) {
+                    pieceDiv.style.opacity = '0.5';
+                    pieceDiv.style.cursor = 'not-allowed';
+                }
+
+                piecesGrid.appendChild(pieceDiv);
+            });
+        }
+
+        function updateMessage() {
+            const messageBox = document.getElementById('messageBox');
+            const currentPlayer = game.players[game.currentPlayerIndex];
+            const isMyTurn = game.currentPlayerIndex === game.playerId;
+
+            console.log(`🎯 updateMessage: Player ${game.currentPlayerIndex}, isAI=${currentPlayer.isAI}, myPlayerId=${game.playerId}, name=${currentPlayer.name}`);
+
+            // Only trigger AI move if it's explicitly set as AI and it's not the current human player
+            if (currentPlayer.isAI === true && game.currentPlayerIndex !== game.playerId) {
+                console.log(`🤖 AI turn detected for player ${game.currentPlayerIndex}`);
+                messageBox.textContent = `AI (${currentPlayer.color}) is thinking...`;
+                messageBox.className = 'message opponent-turn';
+                // Stop timer for AI turns
+                stopTurnTimer();
+                // Trigger AI move after a short delay
+                setTimeout(() => {
+                    aiMove();
+                }, 500);
+            } else if (isMyTurn) {
+                messageBox.textContent = 'Your turn! Select a piece and place it on the board.';
+                messageBox.className = 'message your-turn';
+                // Start turn timer for your turn
+                startTurnTimer();
+            } else {
+                messageBox.textContent = `${currentPlayer.name}'s turn. Please wait...`;
+                messageBox.className = 'message opponent-turn';
+                // Start turn timer for opponent's turn (to show them the timer)
+                startTurnTimer();
+            }
+        }
+
+        function showMessage(message) {
+            const messageBox = document.getElementById('messageBox');
+            if (messageBox) {
+                messageBox.textContent = message;
+                console.log('Message:', message);
+            }
+        }
+
+        // ============================================================================
+        // TURN TIMER SYSTEM
+        // ============================================================================
+
+        function startTurnTimer() {
+            // Stop any existing timer
+            stopTurnTimer();
+
+            const currentPlayer = game.players[game.currentPlayerIndex];
+
+            // Only start timer for human players
+            if (currentPlayer.isAI === true) {
+                document.getElementById('turnTimerDisplay').style.display = 'none';
+                return;
+            }
+
+            // Show timer
+            document.getElementById('turnTimerDisplay').style.display = 'block';
+
+            // Reset timer to room's turn time limit
+            game.turnTimeRemaining = game.turnTimeLimit;
+            updateTimerDisplay();
+
+            // Start countdown
+            game.turnTimerInterval = setInterval(() => {
+                game.turnTimeRemaining--;
+                updateTimerDisplay();
+
+                // Dynamic warnings based on turn time limit
+                const thirtyPercent = Math.floor(game.turnTimeLimit * 0.25);
+                const tenPercent = Math.floor(game.turnTimeLimit * 0.08);
+
+                // Time running out warning (at 25% remaining)
+                if (game.turnTimeRemaining === thirtyPercent && thirtyPercent > 10) {
+                    showMessage(`⏰ ${thirtyPercent}초 남았습니다!`);
+                    document.getElementById('turnTimerDisplay').style.color = 'orange';
+                }
+
+                // Last warning (at ~8% remaining)
+                if (game.turnTimeRemaining === tenPercent && tenPercent > 5) {
+                    showMessage(`⚠️ ${tenPercent}초 남았습니다!`);
+                    document.getElementById('turnTimerDisplay').style.color = 'red';
+                }
+
+                // Time's up!
+                if (game.turnTimeRemaining <= 0) {
+                    stopTurnTimer();
+                    handleTurnTimeout();
+                }
+            }, 1000);
+        }
+
+        function stopTurnTimer() {
+            if (game.turnTimerInterval) {
+                clearInterval(game.turnTimerInterval);
+                game.turnTimerInterval = null;
+            }
+            document.getElementById('turnTimerDisplay').style.display = 'none';
+        }
+
+        function updateTimerDisplay() {
+            const timerValue = document.getElementById('timerValue');
+            const timerDisplay = document.getElementById('turnTimerDisplay');
+
+            timerValue.textContent = game.turnTimeRemaining;
+
+            // Color coding
+            if (game.turnTimeRemaining > 30) {
+                timerDisplay.style.color = 'green';
+            } else if (game.turnTimeRemaining > 10) {
+                timerDisplay.style.color = 'orange';
+            } else {
+                timerDisplay.style.color = 'red';
+            }
+        }
+
+        async function handleTurnTimeout() {
+            const currentPlayerIndex = game.currentPlayerIndex;
+            const currentPlayer = game.players[currentPlayerIndex];
+
+            console.log(`⏱️ Time out for player ${currentPlayerIndex} (${currentPlayer.name})`);
+
+            // Increment skip count
+            currentPlayer.skipCount = (currentPlayer.skipCount || 0) + 1;
+
+            showMessage(`⏱️ ${currentPlayer.name}님 시간 초과! (${currentPlayer.skipCount}/3) 자리 비움`);
+
+            try {
+                // Update skip count in Firebase
+                const skipCountRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/players/${currentPlayerIndex}/skipCount`);
+                await window.firebaseDB.set(skipCountRef, currentPlayer.skipCount);
+
+                // Check if player should be replaced with AI (3 or more timeouts)
+                if (currentPlayer.skipCount >= 3 && !currentPlayer.isAI) {
+                    console.log(`🤖 Player ${currentPlayerIndex} exceeded 3 timeouts. Replacing with AI.`);
+
+                    // Mark player as AI in Firebase
+                    const isAIRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/players/${currentPlayerIndex}/isAI`);
+                    await window.firebaseDB.set(isAIRef, true);
+
+                    const nameRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/players/${currentPlayerIndex}/name`);
+                    await window.firebaseDB.set(nameRef, `AI (${currentPlayer.name})`);
+
+                    // Update local state
+                    currentPlayer.isAI = true;
+                    currentPlayer.name = `AI (${currentPlayer.name})`;
+
+                    showMessage(`🤖 ${currentPlayer.name}이(가) 탈주하여 AI로 대체되었습니다.`);
+                }
+
+                // Only auto-pass if it's the current player's turn
+                if (game.currentPlayerIndex === game.playerId) {
+                    // Auto-pass turn
+                    game.passCount++;
+
+                    const numPlayers = game.players.filter(p => p.pieces && p.pieces.length > 0).length;
+                    game.currentPlayerIndex = (game.currentPlayerIndex + 1) % numPlayers;
+
+                    await syncGameState();
+
+                    // If next player is AI and not the current player, trigger AI move
+                    if (game.players[game.currentPlayerIndex].isAI === true && game.currentPlayerIndex !== game.playerId) {
+                        setTimeout(() => aiMove(), 500);
+                    }
+                }
+            } catch (error) {
+                console.error('Error handling timeout:', error);
+            }
+        }
+
+        // ============================================================================
+        // PIECE INTERACTION
+        // ============================================================================
+
+        function selectPiece(index) {
+            console.log('🖱️ Piece selected:', index, 'Current player:', game.currentPlayerIndex, 'My ID:', game.playerId);
+
+            if (game.currentPlayerIndex !== game.playerId) {
+                showMessage('❌ 상대방의 턴입니다!');
+                return;
+            }
+
+            const currentPlayer = game.players[game.playerId];
+            if (currentPlayer.pieces[index].used) {
+                showMessage('❌ 이미 사용한 조각입니다.');
+                return;
+            }
+
+            game.selectedPieceIndex = index;
+
+            const isFirstPiece = currentPlayer.pieces.every(p => !p.used);
+            if (isFirstPiece) {
+                showMessage('✅ 조각 선택됨! 시작 모서리(★)를 덮도록 배치하세요.');
+            } else {
+                showMessage('✅ 조각 선택됨! 같은 색 조각의 꼭지점에 닿도록 배치하세요.');
+            }
+
+            console.log('✅ Piece selected successfully:', {
+                index,
+                shape: getCurrentShape(currentPlayer.pieces[index]),
+                rotation: currentPlayer.pieces[index].rotation,
+                flipped: currentPlayer.pieces[index].flipped
+            });
+
+            renderPieces();
+            renderBoard();
+        }
+
+        function deselectPiece() {
+            game.selectedPieceIndex = null;
+            clearPreview();
+            renderPieces();
+            renderBoard();
+        }
+
+        function rotatePiece() {
+            if (game.selectedPieceIndex === null) return;
+            if (game.currentPlayerIndex !== game.playerId) return;
+
+            const currentPlayer = game.players[game.playerId];
+            const piece = currentPlayer.pieces[game.selectedPieceIndex];
+            piece.rotation = (piece.rotation + 1) % 4;
+
+            clearPreview();
+            renderPieces();
+        }
+
+        function flipPiece() {
+            if (game.selectedPieceIndex === null) return;
+            if (game.currentPlayerIndex !== game.playerId) return;
+
+            const currentPlayer = game.players[game.playerId];
+            const piece = currentPlayer.pieces[game.selectedPieceIndex];
+            piece.flipped = !piece.flipped;
+
+            clearPreview();
+            renderPieces();
+        }
+
+        function clearPreview() {
+            lastPreviewCells.forEach(cell => {
+                const r = parseInt(cell.dataset.row);
+                const c = parseInt(cell.dataset.col);
+
+                if (!game.board[r][c]) {
+                    cell.className = 'cell';
+
+                    // Mark all 4 corners
+                    if ((r === 0 && c === 0) || (r === 0 && c === 13) || (r === 13 && c === 0) || (r === 13 && c === 13)) {
+                        cell.classList.add('corner');
+                    }
+
+                    // Highlight starting corners for each player's first piece
+                    for (let i = 0; i < game.players.length; i++) {
+                        const player = game.players[i];
+                        const isFirstPiece = player && player.pieces && player.pieces.every(p => !p.used);
+
+                        if (isFirstPiece && r === player.cornerY && c === player.cornerX) {
+                            cell.classList.add('start-corner');
+                            const colors = { blue: '#2196F3', red: '#F44336', yellow: '#FFC107', green: '#4CAF50' };
+                            cell.style.background = colors[player.color] || player.color;
+                            cell.style.opacity = '0.5';
+                        }
+                    }
+                }
+            });
+            lastPreviewCells = [];
+        }
+
+        // ============================================================================
+        // GAME LOGIC - PLACEMENT VALIDATION
+        // ============================================================================
+
+        function isValidPlacement(playerIndex, shape, row, col) {
+            const player = game.players[playerIndex];
+            const color = player.color;
+
+            // Check board bounds
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        const boardR = row + r;
+                        const boardC = col + c;
+
+                        if (boardR < 0 || boardR >= 14 || boardC < 0 || boardC >= 14) {
+                            return false;
+                        }
+
+                        if (game.board[boardR][boardC] !== null) {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            // Check if first piece
+            const isFirstPiece = player.pieces.every(p => !p.used);
+
+            if (isFirstPiece) {
+                // First piece must cover starting corner
+                let coversCorner = false;
+                for (let r = 0; r < shape.length; r++) {
+                    for (let c = 0; c < shape[0].length; c++) {
+                        if (shape[r][c] === 1) {
+                            const boardR = row + r;
+                            const boardC = col + c;
+                            if (boardR === player.cornerY && boardC === player.cornerX) {
+                                coversCorner = true;
+                            }
+                        }
+                    }
+                }
+                return coversCorner;
+            }
+
+            // Check for edge contact (not allowed) and corner contact (required)
+            let touchesSameColorEdge = false;
+            let touchesSameColorCorner = false;
+
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        const boardR = row + r;
+                        const boardC = col + c;
+
+                        // Check edges
+                        const edges = [
+                            [boardR - 1, boardC],
+                            [boardR + 1, boardC],
+                            [boardR, boardC - 1],
+                            [boardR, boardC + 1]
+                        ];
+
+                        for (const [er, ec] of edges) {
+                            if (er >= 0 && er < 14 && ec >= 0 && ec < 14) {
+                                if (game.board[er][ec] === color) {
+                                    touchesSameColorEdge = true;
+                                }
+                            }
+                        }
+
+                        // Check corners
+                        const corners = [
+                            [boardR - 1, boardC - 1],
+                            [boardR - 1, boardC + 1],
+                            [boardR + 1, boardC - 1],
+                            [boardR + 1, boardC + 1]
+                        ];
+
+                        for (const [cr, cc] of corners) {
+                            if (cr >= 0 && cr < 14 && cc >= 0 && cc < 14) {
+                                if (game.board[cr][cc] === color) {
+                                    touchesSameColorCorner = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (touchesSameColorEdge) {
+                return false;
+            }
+
+            if (!touchesSameColorCorner) {
+                return false;
+            }
+
+            return true;
+        }
+
+        // ============================================================================
+        // PREVIEW SYSTEM
+        // ============================================================================
+
+        function showPreview(row, col) {
+            clearPreview();
+
+            if (game.selectedPieceIndex === null) return;
+            if (game.currentPlayerIndex !== game.playerId) return;
+
+            const currentPlayer = game.players[game.playerId];
+            const piece = currentPlayer.pieces[game.selectedPieceIndex];
+            const shape = getCurrentShape(piece);
+
+            const valid = isValidPlacement(game.playerId, shape, row, col);
+
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        const boardR = row + r;
+                        const boardC = col + c;
+
+                        if (boardR >= 0 && boardR < 14 && boardC >= 0 && boardC < 14) {
+                            const cell = document.querySelector(`[data-row="${boardR}"][data-col="${boardC}"]`);
+                            if (cell && !game.board[boardR][boardC]) {
+                                cell.classList.add('filled', currentPlayer.color, 'preview');
+                                if (!valid) {
+                                    cell.classList.add('invalid-preview');
+                                }
+                                lastPreviewCells.push(cell);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ============================================================================
+        // PIECE PLACEMENT & TURN MANAGEMENT
+        // ============================================================================
+
+        async function handleCellClick(row, col) {
+            console.log('🖱️ Cell clicked:', row, col);
+            console.log('📊 Game state:', {
+                currentPlayerIndex: game.currentPlayerIndex,
+                myPlayerId: game.playerId,
+                selectedPieceIndex: game.selectedPieceIndex,
+                isMyTurn: game.currentPlayerIndex === game.playerId
+            });
+
+            // Show preview on click first (for mobile feedback)
+            showPreview(row, col);
+
+            // Only allow placement on your turn
+            if (game.currentPlayerIndex !== game.playerId) {
+                showMessage('❌ 상대방의 턴입니다!');
+                console.log('❌ Not your turn');
+                // Clear preview after a moment so user sees the red preview
+                setTimeout(clearPreview, 800);
+                return;
+            }
+
+            if (game.selectedPieceIndex === null) {
+                showMessage('⚠️ 먼저 오른쪽에서 조각을 선택해주세요!');
+                console.log('⚠️ No piece selected');
+                clearPreview();
+                return;
+            }
+
+            const currentPlayer = game.players[game.playerId];
+            const piece = currentPlayer.pieces[game.selectedPieceIndex];
+            const shape = getCurrentShape(piece);
+
+            console.log('🔍 Validating placement:', {
+                row, col,
+                shape,
+                rotation: piece.rotation,
+                flipped: piece.flipped
+            });
+
+            if (!isValidPlacement(game.playerId, shape, row, col)) {
+                const isFirstPiece = currentPlayer.pieces.every(p => !p.used);
+                if (isFirstPiece) {
+                    showMessage('❌ 첫 조각은 시작 모서리(★)를 덮어야 합니다!');
+                } else {
+                    showMessage('❌ 조각은 같은 색과 꼭지점으로만 닿아야 하고, 변으로는 닿으면 안됩니다!');
+                }
+                console.log('❌ Invalid placement');
+                // Keep the red preview for a moment so user sees why it failed
+                setTimeout(clearPreview, 800);
+                return;
+            }
+
+            // Place piece on board
+            console.log('✅ Placing piece at:', row, col);
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        game.board[row + r][col + c] = currentPlayer.color;
+                    }
+                }
+            }
+
+            piece.used = true;
+            const oldSelectedIndex = game.selectedPieceIndex;
+            game.selectedPieceIndex = null;
+            game.passCount = 0;
+
+            // Switch turn
+            const oldPlayerIndex = game.currentPlayerIndex;
+            const numPlayers = game.mode === 1 ? 4 : (game.mode === 2 ? 2 : (game.mode === 3 ? 4 : 4));
+            game.currentPlayerIndex = (game.currentPlayerIndex + 1) % numPlayers;
+
+            console.log('🔄 Turn switched:', oldPlayerIndex, '→', game.currentPlayerIndex);
+
+            // Sync to Firebase - UI will update via listener
+            try {
+                await syncGameState();
+                showMessage('✅ 조각 배치 성공!');
+                console.log('✅ Successfully synced to Firebase');
+            } catch (error) {
+                console.error('❌ Failed to sync game state:', error);
+                showMessage('❌ 동기화 실패. 다시 시도해주세요.');
+                // Rollback
+                piece.used = false;
+                game.selectedPieceIndex = oldSelectedIndex;
+                game.currentPlayerIndex = oldPlayerIndex;
+                for (let r = 0; r < shape.length; r++) {
+                    for (let c = 0; c < shape[0].length; c++) {
+                        if (shape[r][c] === 1) {
+                            game.board[row + r][col + c] = null;
+                        }
+                    }
+                }
+            }
+
+            clearPreview();
+        }
+
+        // Skip turn
+        async function skipTurn() {
+            if (game.currentPlayerIndex !== game.playerId) {
+                showMessage('❌ 상대방의 턴입니다!');
+                return;
+            }
+
+            if (!confirm('턴을 넘기시겠습니까?')) {
+                return;
+            }
+
+            game.passCount++;
+
+            // Check if all players passed
+            const numPlayers = game.mode === 1 ? 4 : (game.mode === 2 ? 2 : (game.mode === 3 ? 4 : 4));
+            if (game.passCount >= numPlayers) {
+                // Mark game as over
+                try {
+                    const gameStateRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/gameState/gameOver`);
+                    await window.firebaseDB.set(gameStateRef, true);
+                    await syncGameState();
+                } catch (error) {
+                    console.error('Failed to end game:', error);
+                    showMessage('❌ 게임 종료 실패');
+                }
+                return;
+            }
+
+            game.currentPlayerIndex = (game.currentPlayerIndex + 1) % 2;
+
+            try {
+                await syncGameState();
+                showMessage('⏭️ 턴을 넘겼습니다.');
+            } catch (error) {
+                console.error('Failed to skip turn:', error);
+                showMessage('❌ 턴 넘기기 실패');
+                // Rollback
+                game.passCount--;
+                game.currentPlayerIndex = (game.currentPlayerIndex + 1) % 2;
+            }
+        }
+
+        // ============================================================================
+        // GAME END
+        // ============================================================================
+
+        function endGame() {
+            // Stop turn timer when game ends
+            stopTurnTimer();
+
+            const scores = game.players.map((player, index) => {
+                const remainingSquares = player.pieces.reduce((sum, piece) => {
+                    if (!piece.used) {
+                        const shape = PIECE_SHAPES[piece.shapeIndex];
+                        return sum + shape.flat().filter(cell => cell === 1).length;
+                    }
+                    return sum;
+                }, 0);
+
+                let score = -remainingSquares;
+
+                const allPiecesUsed = player.pieces.every(p => p.used);
+                if (allPiecesUsed) {
+                    score += 15;
+                    if (player.pieces[0].used) {
+                        score += 5;
+                    }
+                }
+
+                const isYou = index === game.playerId;
+                return { player: isYou ? 'You' : 'Opponent', color: player.color, score };
+            });
+
+            scores.sort((a, b) => b.score - a.score);
+
+            const finalScoresDiv = document.getElementById('finalScores');
+            finalScoresDiv.innerHTML = scores.map((item, index) => {
+                const medal = index === 0 ? 'Winner!' : 'Runner-up';
+                return `
+                    <div class="score-item ${item.color}">
+                        ${medal} ${item.player}: ${item.score} points
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('gameOverModal').classList.add('show');
+        }
+
+        // ============================================================================
+        // GAME MODE SELECTION
+        // ============================================================================
+
+        function selectMode(mode) {
+            game.mode = mode;
+            const modeText = {
+                1: '1 Player (vs 3 AI)',
+                2: '2 Players (Online)',
+                3: '3 Players (+ 1 AI)',
+                4: '4 Players (Online)'
+            };
+
+            document.getElementById('selectedModeText').textContent = modeText[mode];
+            document.getElementById('lobbyMain').classList.add('hidden');
+
+            // For 1-player mode, start immediately without creating/joining room
+            if (mode === 1) {
+                startSinglePlayerGame();
+            } else {
+                document.getElementById('modeSelected').classList.remove('hidden');
+            }
+        }
+
+        function backToModeSelection() {
+            document.getElementById('modeSelected').classList.add('hidden');
+            document.getElementById('lobbyMain').classList.remove('hidden');
+            game.mode = null;
+        }
+
+        // Start single-player game (1 human vs 3 AI)
+        function startSinglePlayerGame() {
+            game.playerId = 0;
+            game.playerColor = 'blue';
+            game.roomCode = 'LOCAL';
+
+            // Set AI players
+            game.players[1].isAI = true;
+            game.players[2].isAI = true;
+            game.players[3].isAI = true;
+
+            // Hide lobby, show game
+            document.getElementById('lobbyScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            document.getElementById('gameRoomCode').textContent = 'Single Player';
+
+            // Initialize game
+            initializePieces();
+            renderBoard();
+            renderPlayersInfo();
+            renderPieces();
+
+            game.gameStarted = true;
+            updateMessage();
+        }
+
+        // ============================================================================
+        // AI LOGIC
+        // ============================================================================
+
+        function evaluateMove(playerIndex, pieceIndex, shape, row, col) {
+            const player = game.players[playerIndex];
+            let score = 0;
+
+            // 1. Piece size priority (larger pieces = higher score)
+            const pieceSize = shape.flat().filter(cell => cell === 1).length;
+            score += pieceSize * 10;
+
+            // 2. Board position (prefer center)
+            const centerRow = 7, centerCol = 7;
+            let totalDist = 0;
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        const boardR = row + r;
+                        const boardC = col + c;
+                        const dist = Math.abs(centerRow - boardR) + Math.abs(centerCol - boardC);
+                        totalDist += dist;
+                    }
+                }
+            }
+            score -= totalDist * 2;
+
+            // 3. Corner generation (new corners create expansion opportunities)
+            let newCorners = 0;
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        const boardR = row + r;
+                        const boardC = col + c;
+
+                        // Check diagonal corners
+                        const corners = [
+                            [boardR - 1, boardC - 1],
+                            [boardR - 1, boardC + 1],
+                            [boardR + 1, boardC - 1],
+                            [boardR + 1, boardC + 1]
+                        ];
+
+                        for (const [cr, cc] of corners) {
+                            if (cr >= 0 && cr < 14 && cc >= 0 && cc < 14 && !game.board[cr][cc]) {
+                                newCorners++;
+                            }
+                        }
+                    }
+                }
+            }
+            score += newCorners * 20;
+
+            // 4. Opponent blocking
+            let blocking = 0;
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[0].length; c++) {
+                    if (shape[r][c] === 1) {
+                        const boardR = row + r;
+                        const boardC = col + c;
+
+                        // Check adjacent cells for opponent pieces
+                        const adjacent = [
+                            [boardR - 1, boardC],
+                            [boardR + 1, boardC],
+                            [boardR, boardC - 1],
+                            [boardR, boardC + 1]
+                        ];
+
+                        for (const [ar, ac] of adjacent) {
+                            if (ar >= 0 && ar < 14 && ac >= 0 && ac < 14 &&
+                                game.board[ar][ac] && game.board[ar][ac] !== player.color) {
+                                blocking++;
+                            }
+                        }
+                    }
+                }
+            }
+            score += blocking * 5;
+
+            // 5. First move bonus
+            const isFirstPiece = player.pieces.every(p => !p.used);
+            if (isFirstPiece) {
+                score += 50;
+            }
+
+            return score;
+        }
+
+        async function aiMove() {
+            const playerIndex = game.currentPlayerIndex;
+            const player = game.players[playerIndex];
+
+            console.log(`🤖 AI turn for player ${playerIndex} (${player.color})`);
+
+            let bestMove = null;
+            let bestScore = -Infinity;
+
+            // Try all available pieces
+            for (let pieceIndex = 0; pieceIndex < player.pieces.length; pieceIndex++) {
+                const piece = player.pieces[pieceIndex];
+                if (piece.used) continue;
+
+                // Try all rotations and flips
+                for (let rotation = 0; rotation < 4; rotation++) {
+                    for (let flipped = 0; flipped < 2; flipped++) {
+                        piece.rotation = rotation;
+                        piece.flipped = flipped === 1;
+                        const shape = getCurrentShape(piece);
+
+                        // Try all board positions
+                        for (let row = 0; row < 14; row++) {
+                            for (let col = 0; col < 14; col++) {
+                                if (isValidPlacement(playerIndex, shape, row, col)) {
+                                    const score = evaluateMove(playerIndex, pieceIndex, shape, row, col);
+                                    if (score > bestScore) {
+                                        bestScore = score;
+                                        bestMove = { pieceIndex, row, col, rotation, flipped: flipped === 1 };
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Reset piece transformation
+                piece.rotation = 0;
+                piece.flipped = false;
+            }
+
+            if (bestMove) {
+                console.log(`🤖 AI found move:`, bestMove, `Score: ${bestScore}`);
+
+                // Apply the move
+                const piece = player.pieces[bestMove.pieceIndex];
+                piece.rotation = bestMove.rotation;
+                piece.flipped = bestMove.flipped;
+                const shape = getCurrentShape(piece);
+
+                // Place piece
+                for (let r = 0; r < shape.length; r++) {
+                    for (let c = 0; c < shape[0].length; c++) {
+                        if (shape[r][c] === 1) {
+                            game.board[bestMove.row + r][bestMove.col + c] = player.color;
+                        }
+                    }
+                }
+
+                piece.used = true;
+                game.passCount = 0;
+
+                // Determine number of active players based on mode
+                const numPlayers = game.mode === 1 ? 4 : (game.mode === 2 ? 2 : (game.mode === 3 ? 4 : 4));
+                game.currentPlayerIndex = (game.currentPlayerIndex + 1) % numPlayers;
+
+                // For single player mode, just update UI
+                if (game.mode === 1) {
+                    renderBoard();
+                    renderPlayersInfo();
+                    renderPieces();
+                    updateMessage();
+
+                    // Check if next player is also AI
+                    setTimeout(() => {
+                        if (game.players[game.currentPlayerIndex].isAI === true && game.currentPlayerIndex !== game.playerId) {
+                            aiMove();
+                        }
+                    }, 500);
+                } else {
+                    // For multiplayer with AI, sync to Firebase
+                    await syncGameState();
+                }
+            } else {
+                console.log(`🤖 AI has no valid moves, skipping turn`);
+                skipTurn();
+            }
+        }
+
+        // ============================================================================
+        // LEAVE GAME
+        // ============================================================================
+
+        async function leaveGame() {
+            if (!confirm('Are you sure you want to leave the game?')) {
+                return;
+            }
+
+            // Remove listener
+            if (game.dbListener) {
+                // Firebase onValue returns unsubscribe function
+                // We'll clean up by removing the room
+            }
+
+            // Disconnect from room
+            if (game.roomCode && game.playerId !== null) {
+                const connectedRef = window.firebaseDB.ref(window.firebaseDB.database, `rooms/${game.roomCode}/players/${game.playerId}/connected`);
+                await window.firebaseDB.set(connectedRef, false);
+            }
+
+            backToLobby();
+        }
+
+        function backToLobby() {
+            // Reset game state
+            game.roomCode = null;
+            game.playerId = null;
+            game.playerColor = null;
+            game.gameStarted = false;
+            game.selectedPieceIndex = null;
+            game.passCount = 0;
+            game.currentPlayerIndex = 0;
+            game.board = Array(14).fill(null).map(() => Array(14).fill(null));
+
+            // Hide game screen, show lobby
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('gameOverModal').classList.remove('show');
+            document.getElementById('lobbyScreen').classList.remove('hidden');
+            document.getElementById('createRoomView').classList.add('hidden');
+            document.getElementById('joinRoomView').classList.add('hidden');
+            document.getElementById('lobbyMain').classList.remove('hidden');
+            document.getElementById('roomCodeInput').value = '';
+        }
+
+        // Make functions globally accessible
+        window.showLoginScreen = showLoginScreen;
+        window.showSignupScreen = showSignupScreen;
+        window.login = login;
+        window.signup = signup;
+        window.showNicknameInput = showNicknameInput;
+        window.setNickname = setNickname;
+        window.logout = logout;
+        window.showHowToPlay = showHowToPlay;
+        window.backToMainMenu = backToMainMenu;
+        window.backToLobby = backToLobby;
+        window.showCreateRoomSettings = showCreateRoomSettings;
+        window.createRoomWithSettings = createRoomWithSettings;
+        window.createRoom = createRoom;
+        window.showRoomList = showRoomList;
+        window.joinRoom = joinRoom;
+        window.joinRoomByCode = joinRoomByCode;
+        window.toggleReady = toggleReady;
+        window.startGameByHost = startGameByHost;
+        window.cancelRoom = cancelRoom;
+        window.cancelJoin = cancelJoin;
+        window.selectPiece = selectPiece;
+        window.deselectPiece = deselectPiece;
+        window.rotatePiece = rotatePiece;
+        window.flipPiece = flipPiece;
+        window.skipTurn = skipTurn;
+        window.leaveGame = leaveGame;
+
+        console.log('Pixwar initialized');
+    </script>
+</body>
+</html>

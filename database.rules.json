@@ -1,0 +1,80 @@
+{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": true,
+        ".indexOn": ["createdAt", "currentPlayers"],
+
+        "players": {
+          "$playerId": {
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50"
+            },
+            "color": {
+              ".validate": "newData.isString() && (newData.val() == 'blue' || newData.val() == 'yellow' || newData.val() == 'red' || newData.val() == 'green')"
+            },
+            "connected": {
+              ".validate": "newData.isBoolean()"
+            },
+            "ready": {
+              ".validate": "newData.isBoolean()"
+            },
+            "isAI": {
+              ".validate": "newData.isBoolean()"
+            },
+            "disconnectedAt": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "reconnecting": {
+              ".validate": "newData.isBoolean()"
+            },
+            "lastHeartbeat": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            }
+          }
+        },
+
+        "gameState": {
+          "currentPlayerIndex": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+          },
+          "passCount": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+          },
+          "gameStarted": {
+            ".validate": "newData.isBoolean()"
+          },
+          "gameOver": {
+            ".validate": "newData.isBoolean()"
+          },
+          "turnStartTime": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "pausedTime": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "isPaused": {
+            ".validate": "newData.isBoolean()"
+          }
+        },
+
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || data.val() == newData.val())"
+        },
+
+        "currentPlayers": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 4"
+        },
+
+        "maxPlayers": {
+          ".validate": "newData.isNumber() && (newData.val() == 2 || newData.val() == 3 || newData.val() == 4)"
+        },
+
+        "host": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    }
+  }
+}
